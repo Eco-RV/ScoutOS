@@ -8,6 +8,8 @@ export interface Store {
   name: string;
   hosts: string[];
   adapter: Adapter;
+  /** Blocks automated requests; products arrive only through the /import bookmarklet. */
+  browserOnly?: boolean;
 }
 
 export const STORES: Store[] = [
@@ -15,7 +17,7 @@ export const STORES: Store[] = [
   { id: "walmart", name: "Walmart", hosts: ["walmart.co.cr", "www.walmart.co.cr"], adapter: vtex },
   { id: "tiendahp", name: "Tienda HP", hosts: ["tiendahp.co.cr", "www.tiendahp.co.cr"], adapter: magento },
   { id: "zentech", name: "Zentech", hosts: ["zentechcr.net", "www.zentechcr.net"], adapter: woocommerce },
-  { id: "extremetech", name: "ExtremeTech", hosts: ["extremetechcr.com", "www.extremetechcr.com"], adapter: woocommerce },
+  { id: "extremetech", name: "ExtremeTech", hosts: ["extremetechcr.com", "www.extremetechcr.com"], adapter: woocommerce, browserOnly: true },
   { id: "extremeoutlet", name: "Extreme Outlet", hosts: ["extremeoutletcr.com", "www.extremeoutletcr.com"], adapter: woocommerce },
 ];
 

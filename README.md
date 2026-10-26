@@ -9,7 +9,7 @@ Rastreador de precios de laptops en tiendas de Costa Rica. Pegas el link de una 
 | cr.siman.com, walmart.co.cr | VTEX | API pública de catálogo |
 | tiendahp.co.cr | Magento | HTML (cheerio) |
 | zentechcr.net, extremeoutletcr.com | WooCommerce | Store API pública |
-| extremetechcr.com | WooCommerce | **Bloquea peticiones de servidor (403)**: el link se guarda, pero muestra el error |
+| extremetechcr.com | WooCommerce | Protegida por Cloudflare (403 a peticiones automáticas): se importa con el marcador de `/import` |
 
 Links válidos, por ejemplo:
 
@@ -35,6 +35,16 @@ Actualización automática de precios (cada 6 h por defecto, cambia con `SCRAPE_
 npm run worker           # deja corriendo el programador
 npm run scrape:now       # actualiza una vez ya y sigue con el horario
 ```
+
+### ExtremeTech (marcador)
+
+ExtremeTech bloquea cualquier petición automática, así que no se actualiza sola. En `http://localhost:3000/import` hay un botón **Importar a ScoutOS**:
+
+1. Arrástralo a la barra de marcadores.
+2. Abre en la tienda una categoría, búsqueda o producto (por ejemplo `/product-category/computadoras/laptops/laptops-laptops/`).
+3. Pulsa el marcador: lee los productos con tu sesión normal del navegador y los envía a ScoutOS, que guarda historial y rebajas igual que con las demás tiendas.
+
+ScoutOS debe estar corriendo en la misma dirección donde copiaste el marcador. Permite las ventanas emergentes de extremetechcr.com si el navegador las bloquea.
 
 Otros:
 

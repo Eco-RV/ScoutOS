@@ -2,7 +2,7 @@ import { decodeEntities, getJson, MAX_PRODUCTS, REQUEST_DELAY_MS, sleep, stripHt
 import type { Adapter, ScrapedProduct, ScrapeResult, SourceType } from "./types";
 
 // Shape of the public Store API: /wp-json/wc/store/v1/products
-interface WooProduct {
+export interface WooProduct {
   id: number;
   name: string;
   permalink: string;
@@ -40,14 +40,16 @@ function toProduct(p: WooProduct): ScrapedProduct | null {
   const regular = Number(p.prices.regular_price) / scale;
 
   const specs = specsFromBullets(p.short_description);
-  for (const a of p.attributes) specs[a.name] = a.terms.map((t) => t.name).join(", ");
+  // Attributes are often coarser than the bullets ("AMD Ryzen 9" vs "AMD Ryzen 9 8940HX").
+  for (const a of p.attributes) specs[a.name] ??= a.terms.map((t) => t.name).join(", ");
+  const brandAttr = Object.entries(specs).find(([k]) => /^marcas?\b/i.test(k))?.[1];
   if (!Object.keys(specs).length) specs["Descripción"] = stripHtml(p.description).slice(0, 1000);
 
   return {
     externalId: String(p.id),
     url: p.permalink,
     title: decodeEntities(p.name),
-    brand: p.brands?.[0]?.name,
+    brand: p.brands?.[0]?.name ?? brandAttr,
     image: p.images[0]?.src,
     price,
     listPrice: regular > price ? regular : undefined,
@@ -59,7 +61,7 @@ function toProduct(p: WooProduct): ScrapedProduct | null {
 }
 
 /** Map a storefront URL to Store API filters. */
-function filtersFor(url: URL): { type: SourceType; params: URLSearchParams } {
+export function filtersFor(url: URL): { type: SourceType; params: URLSearchParams } {
   const seg = url.pathname.split("/").filter(Boolean);
   const params = new URLSearchParams();
   const last = seg.at(-1) ?? "";
@@ -82,29 +84,40 @@ function filtersFor(url: URL): { type: SourceType; params: URLSearchParams } {
   return { type: "listing", params };
 }
 
+/**
+ * Convert raw Store API products (fetched here or by the browser bookmarklet)
+ * for the storefront `url` they came from.
+ */
+export function fromStoreApi(url: URL, data: WooProduct[]): ScrapeResult {
+  const { type, params } = filtersFor(url);
+  // Some stores hide categories in the API; fall back to the category in the link.
+  const categoryHint = params.get("category")?.replace(/-/g, " ");
+  const products: ScrapedProduct[] = [];
+  for (const p of data) {
+    const sp = toProduct(p);
+    if (!sp) continue;
+    if (!sp.categories?.length && categoryHint) sp.categories = [categoryHint];
+    products.push(sp);
+  }
+  return { type, products };
+}
+
 export const woocommerce: Adapter = {
   async scrape(url: URL): Promise<ScrapeResult> {
     const { type, params } = filtersFor(url);
     params.set("per_page", String(PAGE_SIZE));
-    const products: ScrapedProduct[] = [];
+    const raw: WooProduct[] = [];
 
-    for (let page = 1; products.length < MAX_PRODUCTS; page++) {
+    for (let page = 1; raw.length < MAX_PRODUCTS; page++) {
       params.set("page", String(page));
       const { data, res } = await getJson<WooProduct[]>(
         `${url.origin}/wp-json/wc/store/v1/products?${params}`,
       );
-      // Some stores hide categories in the API; fall back to the category in the link.
-      const categoryHint = params.get("category")?.replace(/-/g, " ");
-      for (const p of data) {
-        const sp = toProduct(p);
-        if (!sp) continue;
-        if (!sp.categories?.length && categoryHint) sp.categories = [categoryHint];
-        products.push(sp);
-      }
+      raw.push(...data);
       const totalPages = Number(res.headers.get("x-wp-totalpages") ?? 1);
       if (type === "product" || page >= totalPages) break;
       await sleep(REQUEST_DELAY_MS);
     }
-    return { type, products };
+    return fromStoreApi(url, raw);
   },
 };

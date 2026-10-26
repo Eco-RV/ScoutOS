@@ -22,6 +22,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             </Link>
             <Link href="/" className="text-sm text-muted hover:text-foreground">Laptops</Link>
             <Link href="/sources" className="text-sm text-muted hover:text-foreground">Links</Link>
+            <Link href="/import" className="text-sm text-muted hover:text-foreground">Importar</Link>
           </nav>
         </header>
         <main className="mx-auto max-w-7xl px-4 py-6">{children}</main>

@@ -15,7 +15,10 @@ export default async function SourcesPage() {
           {STORES.map((s) => s.name).join(", ")}.
         </p>
       </div>
-      <SourcesManager initial={JSON.parse(JSON.stringify(sources))} />
+      <SourcesManager
+        initial={JSON.parse(JSON.stringify(sources))}
+        browserOnlyStores={STORES.filter((s) => s.browserOnly).map((s) => s.id)}
+      />
     </div>
   );
 }

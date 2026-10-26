@@ -108,7 +108,11 @@ export function parseSpecs(title: string, specs: Record<string, string> = {}): L
   const gpuField = spec(specs, /video|gr[aá]fic|gpu/i);
 
   const storage = parseStorage(t);
-  const storageFromField = storageField ? parseStorage(storageField) : {};
+  // A storage-labelled field may hold just a size ("Almacenamiento: 1TB").
+  const plainSize = storageField?.match(/(\d+(?:[.,]\d+)?)\s*(TB|GB)/i);
+  const storageFromField = storageField
+    ? { ...(plainSize && { gb: toGb(Number(plainSize[1].replace(",", ".")), plainSize[2]) }), ...parseStorage(storageField) }
+    : {};
   const storageType =
     storage.type ?? storageFromField.type ?? spec(specs, /tipo de memoria$|tipo de almacenamiento/i)?.toUpperCase();
 

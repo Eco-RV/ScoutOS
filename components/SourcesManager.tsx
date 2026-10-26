@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { timeAgo } from "@/lib/format";
@@ -28,7 +29,13 @@ const describe = (s: Summary) =>
     ? `Error: ${s.error}`
     : `${s.found} laptops · ${s.created} nuevas · ${s.priceChanges} cambios de precio · ${s.priceDrops} rebajas`;
 
-export default function SourcesManager({ initial }: { initial: Source[] }) {
+export default function SourcesManager({
+  initial,
+  browserOnlyStores,
+}: {
+  initial: Source[];
+  browserOnlyStores: string[];
+}) {
   const router = useRouter();
   const [url, setUrl] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
@@ -117,9 +124,15 @@ export default function SourcesManager({ initial }: { initial: Source[] }) {
               </div>
               {s.lastError && <div className="mt-1 text-xs text-deal">{s.lastError}</div>}
             </div>
-            <button className="btn-ghost" disabled={!!busy} onClick={() => scrape(s.id)}>
-              {busy === `scrape-${s.id}` ? "Actualizando…" : "Actualizar"}
-            </button>
+            {browserOnlyStores.includes(s.store) ? (
+              <Link href="/import" className="btn-ghost" title="Esta tienda solo se puede actualizar con el marcador">
+                Importar con marcador
+              </Link>
+            ) : (
+              <button className="btn-ghost" disabled={!!busy} onClick={() => scrape(s.id)}>
+                {busy === `scrape-${s.id}` ? "Actualizando…" : "Actualizar"}
+              </button>
+            )}
             <button
               className="btn-ghost"
               disabled={!!busy}
