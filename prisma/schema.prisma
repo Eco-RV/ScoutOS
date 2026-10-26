@@ -1,0 +1,61 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Source {
+  id           Int       @id @default(autoincrement())
+  url          String    @unique
+  store        String
+  type         String // "product" | "listing"
+  active       Boolean   @default(true)
+  lastRunAt    DateTime?
+  lastError    String?
+  productCount Int       @default(0)
+  createdAt    DateTime  @default(now())
+  products     Product[]
+}
+
+model Product {
+  id           Int            @id @default(autoincrement())
+  store        String
+  externalId   String
+  url          String
+  title        String
+  brand        String?
+  image        String?
+  cpu          String?
+  ramGb        Int?
+  storageGb    Int?
+  storageType  String?
+  screenIn     Float?
+  gpu          String?
+  inStock      Boolean        @default(true)
+  currentPrice Float
+  listPrice    Float?
+  lowestPrice  Float
+  prevPrice    Float?
+  currency     String         @default("CRC")
+  sourceId     Int?
+  source       Source?        @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  history      PriceHistory[]
+
+  @@unique([store, externalId])
+}
+
+model PriceHistory {
+  id         Int      @id @default(autoincrement())
+  productId  Int
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  price      Float
+  listPrice  Float?
+  capturedAt DateTime @default(now())
+
+  @@index([productId, capturedAt])
+}
