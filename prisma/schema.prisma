@@ -29,6 +29,8 @@ model Product {
   brand        String?
   image        String?
   cpu          String?
+  cpuBrand     String?
+  cpuGen       String?
   ramGb        Int?
   storageGb    Int?
   storageType  String?
@@ -45,8 +47,27 @@ model Product {
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
   history      PriceHistory[]
+  comparisons  ComparisonItem[]
 
   @@unique([store, externalId])
+}
+
+model Comparison {
+  id        Int              @id @default(autoincrement())
+  name      String
+  aiResult  String? // respuesta pegada manualmente desde la IA
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  items     ComparisonItem[]
+}
+
+model ComparisonItem {
+  comparisonId Int
+  comparison   Comparison @relation(fields: [comparisonId], references: [id], onDelete: Cascade)
+  productId    Int
+  product      Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([comparisonId, productId])
 }
 
 model PriceHistory {

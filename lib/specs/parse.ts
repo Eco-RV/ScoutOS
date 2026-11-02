@@ -14,7 +14,7 @@ const clean = (s: string) =>
 
 const CPU_PATTERNS = [
   /\bCore\s*Ultra\s*\d\s*\w*/i,
-  /\b(?:Core\s*)?i[3579][\s-]*\d{3,5}[A-Z]{0,2}\d?\b/i, // "i5-1340U", "i7 1165G7"
+  /\b(?:Core\s*)?i[3579][\s-]*N?\d{3,5}[A-Z]{0,2}\d?\b/i, // "i5-1340U", "i7 1165G7", "i3-N305"
   /\bCore\s*i[3579]\b/i,
   /\bCore\s*[357]\s*\d{3}[A-Z]{0,2}\b/i,
   /\bCore\s*[357]\b/i,
@@ -56,7 +56,7 @@ function spec(specs: Record<string, string>, label: RegExp, withLabel = false): 
   return undefined;
 }
 
-const toGb = (n: number, unit: string) => (/tb/i.test(unit) ? Math.round(n * 1024) : Math.round(n));
+const toGb = (n: number, unit: string) => (/^t/i.test(unit) ? Math.round(n * 1024) : Math.round(n));
 
 function parseRam(text: string): number | undefined {
   const m =
@@ -71,7 +71,7 @@ function parseRam(text: string): number | undefined {
 function parseStorage(text: string): { gb?: number; type?: string } {
   const m =
     text.match(/(\d+(?:[.,]\d+)?)\s*(TB|GB)\s*(?:de\s*)?(?:almacenamiento\s*)?(SSD|HDD|eMMC|NVMe|UFS)/i) ??
-    text.match(/(\d+(?:[.,]\d+)?)\s*(TB|GB)?\s*-?\s*(SSD|HDD|eMMC)/i);
+    text.match(/(\d+(?:[.,]\d+)?)\s*(TB|GB|G)?\s*-?\s*(SSD|HDD|eMMC)/i); // "512G SSD" shorthand
   if (m) {
     const n = Number(m[1].replace(",", "."));
     const unit = m[2] ?? (n <= 8 ? "TB" : "GB");

@@ -21,6 +21,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
               Scout<span className="text-accent">OS</span>
             </Link>
             <Link href="/" className="text-sm text-muted hover:text-foreground">Laptops</Link>
+            <Link href="/comparisons" className="text-sm text-muted hover:text-foreground">Comparaciones</Link>
             <Link href="/sources" className="text-sm text-muted hover:text-foreground">Links</Link>
             <Link href="/import" className="text-sm text-muted hover:text-foreground">Importar</Link>
           </nav>

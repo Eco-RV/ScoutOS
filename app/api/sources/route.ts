@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { runSource } from "@/lib/ingest";
@@ -12,7 +13,8 @@ export async function GET() {
 
 /** Add a link and scrape it right away so the user sees results. */
 export async function POST(req: Request) {
-  const { url } = (await req.json()) as { url?: string };
+  const body = (await req.json().catch(() => null)) as { url?: unknown } | null;
+  const url = typeof body?.url === "string" ? body.url.trim() : "";
   if (!url) return NextResponse.json({ error: "Falta el link" }, { status: 400 });
 
   let store, parsed;
@@ -25,9 +27,18 @@ export async function POST(req: Request) {
   const existing = await prisma.source.findUnique({ where: { url: parsed.href } });
   if (existing) return NextResponse.json({ error: "Ese link ya está agregado" }, { status: 409 });
 
-  const source = await prisma.source.create({
-    data: { url: parsed.href, store: store.id, type: "listing" },
-  });
+  let source;
+  try {
+    source = await prisma.source.create({
+      data: { url: parsed.href, store: store.id, type: "listing" },
+    });
+  } catch (e) {
+    // Two requests with the same link can both pass the check above.
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
+      return NextResponse.json({ error: "Ese link ya está agregado" }, { status: 409 });
+    }
+    throw e;
+  }
   const summary = await runSource(source.id);
   return NextResponse.json({ source, summary }, { status: 201 });
 }
