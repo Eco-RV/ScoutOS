@@ -9,6 +9,7 @@ Rastreador de precios de laptops en tiendas de Costa Rica. Pegas el link de una 
 | cr.siman.com, walmart.co.cr | VTEX | API pública de catálogo |
 | tiendahp.co.cr | Magento | HTML (cheerio) |
 | zentechcr.net, extremeoutletcr.com | WooCommerce | Store API pública |
+| cfx-cr.com | Magento | HTML (cheerio) |
 | extremetechcr.com | WooCommerce | Protegida por Cloudflare (403 a peticiones automáticas): se importa con el marcador de `/import` |
 
 Links válidos, por ejemplo:

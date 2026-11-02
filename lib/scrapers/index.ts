@@ -16,6 +16,7 @@ export const STORES: Store[] = [
   { id: "siman", name: "Siman", hosts: ["cr.siman.com"], adapter: vtex },
   { id: "walmart", name: "Walmart", hosts: ["walmart.co.cr", "www.walmart.co.cr"], adapter: vtex },
   { id: "tiendahp", name: "Tienda HP", hosts: ["tiendahp.co.cr", "www.tiendahp.co.cr"], adapter: magento },
+  { id: "cfx", name: "CFX", hosts: ["cfx-cr.com", "www.cfx-cr.com"], adapter: magento },
   { id: "zentech", name: "Zentech", hosts: ["zentechcr.net", "www.zentechcr.net"], adapter: woocommerce },
   { id: "extremetech", name: "ExtremeTech", hosts: ["extremetechcr.com", "www.extremetechcr.com"], adapter: woocommerce, browserOnly: true },
   { id: "extremeoutlet", name: "Extreme Outlet", hosts: ["extremeoutletcr.com", "www.extremeoutletcr.com"], adapter: woocommerce },
@@ -51,7 +52,10 @@ export function isLaptop(p: Pick<ScrapedProduct, "title" | "categories">): boole
   if (ACCESSORY.test(p.title.trim())) return false;
   if (LAPTOP.test(p.title)) return true;
   if (OTHER_DEVICE.test(p.title)) return false;
-  return (p.categories ?? []).some((c) => /laptop|port[aá]til|notebook/i.test(c) && !/accesorio/i.test(c));
+  // A store's generic "Computadoras" category (CFX) holds laptops; "Computadoras de escritorio" does not match.
+  return (p.categories ?? []).some(
+    (c) => (/laptop|port[aá]til|notebook/i.test(c) || /^computadoras$/i.test(c.trim())) && !/accesorio/i.test(c),
+  );
 }
 
 export type { ScrapedProduct, ScrapeResult, SourceType } from "./types";

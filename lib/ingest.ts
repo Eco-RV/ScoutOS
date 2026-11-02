@@ -1,4 +1,6 @@
 import { prisma } from "@/lib/db";
+import { canonicalBrand } from "@/lib/brands";
+import { parseCpu } from "@/lib/cpu";
 import { isLaptop, STORES, storeForUrl, type ScrapedProduct, type ScrapeResult } from "@/lib/scrapers";
 import { parseSpecs } from "@/lib/specs/parse";
 
@@ -11,14 +13,31 @@ export interface RunSummary {
   error?: string;
 }
 
+/**
+ * A price drop is a lower price than the last scrape, or a product entering sale
+ * (current price below the store's list price). Staying on sale is not counted again.
+ */
+export function isPriceDrop(
+  existing: { currentPrice: number; listPrice: number | null },
+  p: { price: number; listPrice?: number | null },
+): boolean {
+  const lowerThanBefore = p.price < existing.currentPrice;
+  const onSale = p.listPrice != null && p.price < p.listPrice;
+  const wasOnSale = existing.listPrice != null && existing.currentPrice < existing.listPrice;
+  return lowerThanBefore || (onSale && !wasOnSale);
+}
+
 async function upsertProduct(store: string, sourceId: number, p: ScrapedProduct) {
   const specs = parseSpecs(p.title, p.specs);
   const data = {
     url: p.url,
     title: p.title,
-    brand: p.brand ?? p.title.match(/\b(HP|Dell|Lenovo|Asus|Acer|Apple|MSI|Samsung|Huawei|Microsoft|Gigabyte|LG)\b/i)?.[0],
+    brand: canonicalBrand(
+      p.brand ?? p.title.match(/\b(HP|Dell|Lenovo|Asus|Acer|Apple|MSI|Samsung|Huawei|Microsoft|Gigabyte|LG)\b/i)?.[0] ?? "",
+    ) || undefined,
     image: p.image,
     ...specs,
+    ...parseCpu(specs.cpu),
     inStock: p.inStock,
     listPrice: p.listPrice ?? null,
     currency: p.currency,
@@ -56,7 +75,7 @@ async function upsertProduct(store: string, sourceId: number, p: ScrapedProduct)
       }),
     },
   });
-  return { created: false, changed, dropped: changed && p.price < existing.currentPrice };
+  return { created: false, changed, dropped: isPriceDrop(existing, p) };
 }
 
 /** Store an already-scraped result for a source and update its status. */

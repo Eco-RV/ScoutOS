@@ -1,12 +1,15 @@
 import Link from "next/link";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
-import { droppedBy, formatPrice, formatStorage, storeDiscountPct, timeAgo } from "@/lib/format";
+import { brandKey, canonicalBrand } from "@/lib/brands";
+import { droppedBy, formatStorage, storeDiscountPct, timeAgo } from "@/lib/format";
 import { STORES, storeName } from "@/lib/scrapers";
+import CheckboxFilter from "@/components/CheckboxFilter";
+import CompareGrid from "@/components/CompareGrid";
 
 export const dynamic = "force-dynamic";
 
-type Search = Record<string, string | undefined>;
+type Search = Record<string, string | string[] | undefined>;
 
 const SORTS: Record<string, string> = {
   price_asc: "Precio: menor a mayor",
@@ -15,14 +18,61 @@ const SORTS: Record<string, string> = {
   recent: "Actualizados recientemente",
 };
 
+const STORAGE_OPTIONS = [128, 256, 512, 1024];
+
 export default async function Home({ searchParams }: { searchParams: Promise<Search> }) {
-  const sp = await searchParams;
+  const raw = await searchParams;
+  // Repeated params (?brand=a&brand=b) arrive as arrays; every other filter takes the first value.
+  const sp = Object.fromEntries(
+    Object.entries(raw).map(([k, v]) => [k, Array.isArray(v) ? v[0] : v]),
+  ) as Record<string, string | undefined>;
+  const brandKeys = ([] as string[]).concat(raw.brand ?? []);
+  const cpuBrands = ([] as string[]).concat(raw.cpuBrand ?? []);
+  const cpuGens = ([] as string[]).concat(raw.cpuGen ?? []);
+
+  const [brandRows, cpuRows, total, lastRun] = await Promise.all([
+    prisma.product.findMany({ distinct: ["brand"], select: { brand: true }, where: { brand: { not: null } } }),
+    prisma.product.findMany({
+      distinct: ["cpuBrand", "cpuGen"],
+      select: { cpuBrand: true, cpuGen: true },
+      where: { cpuBrand: { not: null } },
+    }),
+    prisma.product.count(),
+    prisma.source.findFirst({ orderBy: { lastRunAt: "desc" }, select: { lastRunAt: true } }),
+  ]);
+
+  const cpuBrandOptions = [...new Set(cpuRows.map((r) => r.cpuBrand!))]
+    .sort((a, b) => a.localeCompare(b))
+    .map((v) => ({ value: v, label: v }));
+  const cpuGenOptions = [...new Set(cpuRows.map((r) => r.cpuGen).filter((g): g is string => !!g))]
+    .sort((a, b) => a.localeCompare(b, "es", { numeric: true }))
+    .map((v) => ({ value: v, label: v }));
+
+  // "LENOVO" and "Lenovo" are one option; selecting it matches every spelling stored in the DB.
+  const spellings = new Map<string, string[]>();
+  for (const { brand } of brandRows) {
+    if (!brand) continue;
+    const key = brandKey(brand);
+    spellings.set(key, [...(spellings.get(key) ?? []), brand]);
+  }
+  const brandOptions = [...spellings.keys()]
+    .map((key) => ({ key, label: canonicalBrand(key) }))
+    .sort((a, b) => a.label.localeCompare(b.label));
+
+  const priceRange = {
+    ...(sp.min && { gte: Number(sp.min) }),
+    ...(sp.max && { lte: Number(sp.max) }),
+  };
+
   const where: Prisma.ProductWhereInput = {
     ...(sp.q && { title: { contains: sp.q } }),
     ...(sp.store && { store: sp.store }),
-    ...(sp.brand && { brand: sp.brand }),
+    ...(brandKeys.length > 0 && { brand: { in: brandKeys.flatMap((k) => spellings.get(k) ?? []) } }),
+    ...(cpuBrands.length > 0 && { cpuBrand: { in: cpuBrands } }),
+    ...(cpuGens.length > 0 && { cpuGen: { in: cpuGens } }),
     ...(sp.ram && { ramGb: { gte: Number(sp.ram) } }),
-    ...(sp.max && { currentPrice: { lte: Number(sp.max) } }),
+    ...(sp.storage && { storageGb: { gte: Number(sp.storage) } }),
+    ...(Object.keys(priceRange).length > 0 && { currentPrice: priceRange }),
     ...(sp.stock === "1" && { inStock: true }),
   };
 
@@ -35,12 +85,6 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
   });
   if (sp.deals === "1") products = products.filter((p) => storeDiscountPct(p) > 0 || droppedBy(p) > 0);
   if (sp.sort === "discount") products.sort((a, b) => storeDiscountPct(b) - storeDiscountPct(a));
-
-  const [brands, total, lastRun] = await Promise.all([
-    prisma.product.findMany({ distinct: ["brand"], select: { brand: true }, where: { brand: { not: null } } }),
-    prisma.product.count(),
-    prisma.source.findFirst({ orderBy: { lastRunAt: "desc" }, select: { lastRunAt: true } }),
-  ]);
 
   if (!total) {
     return (
@@ -71,14 +115,23 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
           <option value="">Todas las tiendas</option>
           {STORES.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
         </select>
-        <select name="brand" defaultValue={sp.brand ?? ""} className="input">
-          <option value="">Todas las marcas</option>
-          {brands.map((b) => <option key={b.brand} value={b.brand!}>{b.brand}</option>)}
-        </select>
+        <CheckboxFilter
+          name="brand"
+          label="marcas"
+          options={brandOptions.map((b) => ({ value: b.key, label: b.label }))}
+          selected={brandKeys}
+        />
+        <CheckboxFilter name="cpuBrand" label="procesador" options={cpuBrandOptions} selected={cpuBrands} />
+        <CheckboxFilter name="cpuGen" label="generación" options={cpuGenOptions} selected={cpuGens} />
         <select name="ram" defaultValue={sp.ram ?? ""} className="input">
           <option value="">RAM</option>
           {[8, 16, 32].map((r) => <option key={r} value={r}>{r} GB o más</option>)}
         </select>
+        <select name="storage" defaultValue={sp.storage ?? ""} className="input">
+          <option value="">Almacenamiento</option>
+          {STORAGE_OPTIONS.map((gb) => <option key={gb} value={gb}>{formatStorage(gb)} o más</option>)}
+        </select>
+        <input name="min" type="number" defaultValue={sp.min} placeholder="Precio mín. ₡" className="input w-36" />
         <input name="max" type="number" defaultValue={sp.max} placeholder="Precio máx. ₡" className="input w-36" />
         <select name="sort" defaultValue={sp.sort ?? "price_asc"} className="input">
           {Object.entries(SORTS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
@@ -93,61 +146,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
         <Link href="/" className="text-sm text-muted hover:text-foreground">Limpiar</Link>
       </form>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {products.map((p) => {
-          const pct = storeDiscountPct(p);
-          const drop = droppedBy(p);
-          const chips = [
-            p.cpu,
-            p.ramGb && `${p.ramGb} GB RAM`,
-            p.storageGb && `${formatStorage(p.storageGb)}${p.storageType ? ` ${p.storageType}` : ""}`,
-            p.screenIn && `${p.screenIn}"`,
-            p.gpu,
-          ].filter(Boolean) as string[];
-          return (
-            <Link
-              key={p.id}
-              href={`/products/${p.id}`}
-              className="group flex flex-col rounded-lg border border-line bg-surface p-3 transition hover:border-accent"
-            >
-              <div className="relative mb-3 flex h-40 items-center justify-center rounded bg-white">
-                {p.image && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={p.image} alt="" className="max-h-full max-w-full object-contain" loading="lazy" />
-                )}
-                {pct > 0 && (
-                  <span className="absolute left-1.5 top-1.5 rounded bg-deal px-1.5 py-0.5 text-xs font-semibold text-white">
-                    -{pct}%
-                  </span>
-                )}
-                {!p.inStock && (
-                  <span className="absolute right-1.5 top-1.5 rounded bg-neutral-700 px-1.5 py-0.5 text-xs text-white">Agotado</span>
-                )}
-              </div>
-              <div className="text-xs font-medium uppercase tracking-wide text-muted">{storeName(p.store)}</div>
-              <h2 className="mt-0.5 line-clamp-2 text-sm font-medium group-hover:text-accent">{p.title}</h2>
-              <div className="mt-2 flex flex-wrap gap-1">
-                {chips.map((c) => (
-                  <span key={c} className="rounded bg-background px-1.5 py-0.5 text-xs text-muted">{c}</span>
-                ))}
-              </div>
-              <div className="mt-auto pt-3">
-                <div className="flex items-baseline gap-2">
-                  <span className="text-lg font-semibold">{formatPrice(p.currentPrice)}</span>
-                  {p.listPrice && p.listPrice > p.currentPrice && (
-                    <span className="text-sm text-muted line-through">{formatPrice(p.listPrice)}</span>
-                  )}
-                </div>
-                {drop > 0 && (
-                  <div className="mt-1 inline-block rounded bg-deal-bg px-1.5 py-0.5 text-xs font-medium text-deal">
-                    Bajó {formatPrice(drop)} desde la última revisión
-                  </div>
-                )}
-              </div>
-            </Link>
-          );
-        })}
-      </div>
+      <CompareGrid products={products.map((p) => ({ ...p, storeLabel: storeName(p.store) }))} />
     </div>
   );
 }
