@@ -48,6 +48,7 @@ model Product {
   updatedAt    DateTime       @updatedAt
   history      PriceHistory[]
   comparisons  ComparisonItem[]
+  favorite     Favorite?
 
   @@unique([store, externalId])
 }
@@ -79,4 +80,12 @@ model PriceHistory {
   capturedAt DateTime @default(now())
 
   @@index([productId, capturedAt])
+}
+
+model Favorite {
+  id          Int      @id @default(autoincrement())
+  productId   Int      @unique
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  priceAtSave Float
+  createdAt   DateTime @default(now())
 }

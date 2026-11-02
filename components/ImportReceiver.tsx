@@ -71,8 +71,9 @@ export default function ImportReceiver({ allowedHosts }: { allowedHosts: string[
     <div className="space-y-4">
       {state.kind !== "idle" && (
         <div
+          role={state.kind === "error" ? "alert" : "status"}
           className={`rounded-lg border p-4 text-sm ${
-            state.kind === "error" ? "border-deal bg-deal-bg text-deal" : "border-line bg-surface"
+            state.kind === "error" ? "border-error bg-error-bg text-error" : "border-line bg-surface"
           }`}
         >
           {state.kind === "waiting" && "Leyendo los productos de la tienda…"}
