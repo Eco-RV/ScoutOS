@@ -1,6 +1,6 @@
 /**
  * Source of the "Importar a ScoutOS" bookmarklet. It runs on the store page in
- * the user's own browser, reads the WooCommerce Store API for the category /
+ * the user's own browser. WooCommerce stores: reads the Store API for the category /
  * search / product being viewed (same URL mapping as filtersFor in
  * lib/scrapers/woocommerce.ts), then hands the products to the ScoutOS /import
  * popup with postMessage.
@@ -13,6 +13,39 @@ const SOURCE = `
   const u = new URL(location.href);
   const seg = u.pathname.split("/").filter(Boolean);
   const last = seg[seg.length - 1];
+  if (/(^|\.)compufaxcr\.com$/.test(u.hostname)) {
+    const cards = [...document.querySelectorAll(".product-card")];
+    if (!cards.length) { alert("ScoutOS: abre una categoría de Compufax con productos."); return; }
+    const cat = seg[0].replace(/-+\d+$/, "");
+    const money = (el) => (el ? Number(el.textContent.replace(/[^\d.]/g, "")) : 0);
+    const products = cards.map((c) => {
+      const a = c.querySelector("a[href]");
+      const name = c.querySelector(".product-card__name");
+      if (!a || !name) return null;
+      const href = new URL(a.getAttribute("href"), location.href).href;
+      const id = href.match(/-(\d+)$/);
+      const price = money(c.querySelector(".product-card__price strong"));
+      const before = money(c.querySelector(".product-card__price__before-discount"));
+      const img = c.querySelector("img");
+      return {
+        externalId: id ? id[1] : href,
+        url: href,
+        title: name.textContent.trim().replace(/\s+/g, " "),
+        image: img ? img.src : undefined,
+        price: price,
+        listPrice: before > price ? before : undefined,
+        inStock: true,
+        categories: [cat],
+      };
+    }).filter(Boolean);
+    const w = window.open(O + "/import?popup=1", "scoutos-import");
+    if (!w) { alert("ScoutOS: permite las ventanas emergentes para este sitio y vuelve a intentarlo."); return; }
+    const msg = { type: "scoutos-import", url: location.href, products: products };
+    addEventListener("message", (e) => {
+      if (e.origin === O && e.data === "scoutos-ready") w.postMessage(msg, O);
+    });
+    return;
+  }
   const q = new URLSearchParams({ per_page: "100" });
   if (seg[0] === "producto" || seg[0] === "product") q.set("slug", last);
   else if (seg[0] === "product-category" || seg[0] === "categoria-producto") q.set("category", last);

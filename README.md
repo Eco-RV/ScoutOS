@@ -11,6 +11,7 @@ Rastreador de precios de laptops en tiendas de Costa Rica. Pegas el link de una 
 | zentechcr.net, extremeoutletcr.com | WooCommerce | Store API pública |
 | cfx-cr.com | Magento | HTML (cheerio) |
 | extremetechcr.com | WooCommerce | Protegida por Cloudflare (403 a peticiones automáticas): se importa con el marcador de `/import` |
+| compufaxcr.com | Alegra Shop | Carga los productos con JavaScript: se importa con el marcador de `/import` desde una categoría |
 
 Links válidos, por ejemplo:
 

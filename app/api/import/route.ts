@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { saveResult } from "@/lib/ingest";
-import { storeForUrl } from "@/lib/scrapers";
+import { browserCards, fromCards } from "@/lib/scrapers/cards";
+import { storeForUrl, type ScrapeResult } from "@/lib/scrapers";
 import { fromStoreApi, woocommerce, type WooProduct } from "@/lib/scrapers/woocommerce";
 
 export const runtime = "nodejs";
@@ -17,16 +18,17 @@ function canonical(url: URL) {
  * browser session (for stores that block server requests).
  */
 export async function POST(req: Request) {
-  const body = (await req.json().catch(() => null)) as { url?: string; products?: WooProduct[] } | null;
+  const body = (await req.json().catch(() => null)) as { url?: string; products?: unknown[] } | null;
   if (!body?.url || !Array.isArray(body.products)) {
     return NextResponse.json({ error: "Datos de importación inválidos" }, { status: 400 });
   }
 
   try {
     const { store, url } = storeForUrl(body.url);
-    if (store.adapter !== woocommerce) throw new Error(`${store.name} no necesita el marcador: agrega el link en /sources`);
-
-    const result = fromStoreApi(url, body.products);
+    let result: ScrapeResult;
+    if (store.adapter === woocommerce) result = fromStoreApi(url, body.products as WooProduct[]);
+    else if (store.adapter === browserCards) result = fromCards(url, body.products);
+    else throw new Error(`${store.name} no necesita el marcador: agrega el link en /sources`);
     const href = canonical(url);
     const source = await prisma.source.upsert({
       where: { url: href },

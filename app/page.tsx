@@ -48,6 +48,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
     Object.entries(raw).map(([k, v]) => [k, Array.isArray(v) ? v[0] : v]),
   ) as Record<string, string | undefined>;
   const brandKeys = [...new Set(valuesOf(raw, "brand"))];
+  // Stores the user hid: they stay out of the results. Unknown ids are ignored.
+  const hideStores = [...new Set(valuesOf(raw, "hideStore"))].filter((id) => STORES.some((st) => st.id === id));
   const cpuBrands = valuesOf(raw, "cpuBrand");
   const cpuGens = valuesOf(raw, "cpuGen");
   const screen = isScreenBucket(sp.screen) ? sp.screen : undefined;
@@ -98,7 +100,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
 
   const where: Prisma.ProductWhereInput = {
     ...textWhere(sp.q),
-    ...(sp.store && { store: sp.store }),
+    ...(hideStores.length > 0 && { store: { notIn: hideStores } }),
     ...(brandKeys.length > 0 && { brand: { in: brandKeys.flatMap((k) => spellings.get(k) ?? []) } }),
     ...(cpuBrands.length > 0 && { cpuBrand: { in: cpuBrands } }),
     ...(cpuGens.length > 0 && { cpuGen: { in: cpuGens } }),
@@ -164,7 +166,9 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
 
   const chips: { label: string; href: string }[] = [];
   if (sp.q) chips.push({ label: `“${sp.q}”`, href: hrefWith(raw, { q: null }) });
-  if (sp.store) chips.push({ label: storeName(sp.store), href: hrefWith(raw, { store: null }) });
+  for (const id of hideStores) {
+    chips.push({ label: `Sin ${storeName(id)}`, href: hrefWith(raw, { hideStore: hideStores.filter((x) => x !== id) }) });
+  }
   for (const k of brandKeys) chips.push({ label: canonicalBrand(k), href: hrefWith(raw, { brand: brandKeys.filter((x) => x !== k) }) });
   for (const k of cpuBrands) chips.push({ label: k, href: hrefWith(raw, { cpuBrand: cpuBrands.filter((x) => x !== k) }) });
   for (const k of cpuGens) chips.push({ label: k, href: hrefWith(raw, { cpuGen: cpuGens.filter((x) => x !== k) }) });
@@ -273,11 +277,15 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
       <form className="space-y-3 rounded-xl border border-line bg-surface p-4">
         <div className="flex flex-wrap items-center gap-2">
           <input name="q" defaultValue={sp.q} placeholder="Marca, CPU, modelo… ej. dell i7 16gb" aria-label="Buscar" className="input min-w-60 flex-1" />
-          <select name="store" defaultValue={sp.store ?? ""} aria-label="Tienda" className="input">
-            <option value="">Todas las tiendas</option>
-            {STORES.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-          </select>
           <CheckboxFilter name="brand" label="marcas" options={brandOptions} selected={brandKeys} />
+          <CheckboxFilter
+            name="hideStore"
+            label="Ocultar tiendas"
+            emptyText="Todas las tiendas"
+            hint="Marca las tiendas que no quieres ver"
+            options={STORES.map((st) => ({ value: st.id, label: st.name }))}
+            selected={hideStores}
+          />
           <input name="min" type="number" defaultValue={sp.min} placeholder="Precio mín. ₡" aria-label="Precio mínimo" className="input w-36" />
           <input name="max" type="number" defaultValue={sp.max} placeholder="Precio máx. ₡" aria-label="Precio máximo" className="input w-36" />
           <select name="sort" defaultValue={sp.sort ?? "price_asc"} aria-label="Orden" className="input">

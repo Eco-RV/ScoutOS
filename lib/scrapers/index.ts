@@ -1,3 +1,4 @@
+import { browserCards } from "./cards";
 import { magento } from "./magento";
 import type { Adapter, ScrapedProduct } from "./types";
 import { vtex } from "./vtex";
@@ -52,6 +53,11 @@ export const STORES: Store[] = [
     id: "extremeoutlet", name: "Extreme Outlet", hosts: ["extremeoutletcr.com", "www.extremeoutletcr.com"], adapter: woocommerce,
     platform: "WooCommerce", method: "API pública de la tienda",
     example: "https://extremeoutletcr.com/?s=laptop",
+  },
+  {
+    id: "compufax", name: "Compufax", hosts: ["compufaxcr.com", "www.compufaxcr.com"], adapter: browserCards, browserOnly: true,
+    platform: "Alegra Shop", method: "Marcador del navegador (la tienda carga los productos con JavaScript)",
+    example: "https://www.compufaxcr.com/laptop-gaming--59",
   },
 ];
 

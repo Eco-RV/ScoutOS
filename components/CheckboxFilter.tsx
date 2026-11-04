@@ -4,20 +4,26 @@ export default function CheckboxFilter({
   label,
   options,
   selected,
+  emptyText,
+  hint,
 }: {
   name: string;
   label: string;
   options: { value: string; label: string; group?: string }[];
   selected: string[];
+  /** Summary when nothing is selected; defaults to "Todos: <label>". */
+  emptyText?: string;
+  hint?: string;
 }) {
   // Options that carry a group (e.g. the CPU brand of a generation) are listed under a heading.
   let lastGroup: string | undefined;
   return (
     <details className="relative">
       <summary className="input cursor-pointer list-none">
-        {selected.length > 0 ? `${label} (${selected.length})` : `Todos: ${label}`}
+        {selected.length > 0 ? `${label} (${selected.length})` : emptyText ?? `Todos: ${label}`}
       </summary>
       <div className="dropdown-panel absolute z-20 mt-1 max-h-80 w-64 overflow-y-auto rounded-lg border border-line bg-surface p-2 shadow-2xl shadow-black/50">
+        {hint && <p className="px-1.5 pb-2 text-xs text-muted">{hint}</p>}
         {options.map((o) => {
           const heading = o.group && o.group !== lastGroup ? o.group : null;
           lastGroup = o.group ?? lastGroup;
