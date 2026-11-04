@@ -10,16 +10,49 @@ export interface Store {
   adapter: Adapter;
   /** Blocks automated requests; products arrive only through the /import bookmarklet. */
   browserOnly?: boolean;
+  platform: string;
+  /** How ScoutOS reads the store, in plain words. */
+  method: string;
+  /** A category link that works for this store. */
+  example: string;
 }
 
 export const STORES: Store[] = [
-  { id: "siman", name: "Siman", hosts: ["cr.siman.com"], adapter: vtex },
-  { id: "walmart", name: "Walmart", hosts: ["walmart.co.cr", "www.walmart.co.cr"], adapter: vtex },
-  { id: "tiendahp", name: "Tienda HP", hosts: ["tiendahp.co.cr", "www.tiendahp.co.cr"], adapter: magento },
-  { id: "cfx", name: "CFX", hosts: ["cfx-cr.com", "www.cfx-cr.com"], adapter: magento },
-  { id: "zentech", name: "Zentech", hosts: ["zentechcr.net", "www.zentechcr.net"], adapter: woocommerce },
-  { id: "extremetech", name: "ExtremeTech", hosts: ["extremetechcr.com", "www.extremetechcr.com"], adapter: woocommerce, browserOnly: true },
-  { id: "extremeoutlet", name: "Extreme Outlet", hosts: ["extremeoutletcr.com", "www.extremeoutletcr.com"], adapter: woocommerce },
+  {
+    id: "siman", name: "Siman", hosts: ["cr.siman.com"], adapter: vtex,
+    platform: "VTEX", method: "API pública de catálogo",
+    example: "https://cr.siman.com/tecnologia/computadoras/laptops",
+  },
+  {
+    id: "walmart", name: "Walmart", hosts: ["walmart.co.cr", "www.walmart.co.cr"], adapter: vtex,
+    platform: "VTEX", method: "API pública de catálogo",
+    example: "https://www.walmart.co.cr/electronica/computacion/laptops",
+  },
+  {
+    id: "tiendahp", name: "Tienda HP", hosts: ["tiendahp.co.cr", "www.tiendahp.co.cr"], adapter: magento,
+    platform: "Magento", method: "HTML de la tienda",
+    example: "https://www.tiendahp.co.cr/laptops",
+  },
+  {
+    id: "cfx", name: "CFX", hosts: ["cfx-cr.com", "www.cfx-cr.com"], adapter: magento,
+    platform: "Magento", method: "HTML de la tienda",
+    example: "https://cfx-cr.com/computadoras.html?cat=11",
+  },
+  {
+    id: "zentech", name: "Zentech", hosts: ["zentechcr.net", "www.zentechcr.net"], adapter: woocommerce,
+    platform: "WooCommerce", method: "API pública de la tienda",
+    example: "https://zentechcr.net/categoria-producto/laptops-usadas/",
+  },
+  {
+    id: "extremetech", name: "ExtremeTech", hosts: ["extremetechcr.com", "www.extremetechcr.com"], adapter: woocommerce, browserOnly: true,
+    platform: "WooCommerce", method: "Marcador del navegador (la tienda bloquea bots)",
+    example: "https://extremetechcr.com/product-category/computadoras/laptops/laptops-laptops/",
+  },
+  {
+    id: "extremeoutlet", name: "Extreme Outlet", hosts: ["extremeoutletcr.com", "www.extremeoutletcr.com"], adapter: woocommerce,
+    platform: "WooCommerce", method: "API pública de la tienda",
+    example: "https://extremeoutletcr.com/?s=laptop",
+  },
 ];
 
 export function storeForUrl(raw: string): { store: Store; url: URL } {

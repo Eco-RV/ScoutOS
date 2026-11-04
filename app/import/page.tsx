@@ -1,16 +1,16 @@
 import ImportReceiver from "@/components/ImportReceiver";
 import { STORES } from "@/lib/scrapers";
+import PageHeader from "@/components/PageHeader";
 
 export default function ImportPage() {
   const browserOnly = STORES.filter((s) => s.browserOnly);
   return (
     <div className="max-w-2xl space-y-5">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Importar desde tu navegador</h1>
-        <p className="mt-1 text-sm text-muted">
+        <PageHeader eyebrow="Marcador" title="Importar desde tu navegador">
           {browserOnly.map((s) => s.name).join(", ")} bloquea las peticiones automáticas, así que ScoutOS no puede
           revisarla solo. Con este marcador la importas tú mientras navegas la tienda.
-        </p>
+        </PageHeader>
       </div>
 
       <ImportReceiver allowedHosts={browserOnly.flatMap((s) => s.hosts)} />

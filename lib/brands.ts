@@ -14,8 +14,19 @@ const KNOWN: Record<string, string> = {
   samsung: "Samsung",
 };
 
-/** Key that groups the same brand written in different cases ("LENOVO" and "Lenovo"). */
-export const brandKey = (b: string) => b.trim().toLowerCase();
+// Words stores add around the brand ("Laptops usadas dell", "CPUMINI usadas HP").
+const NOISE = /\b(laptops?|usadas?|usados?|recertificad[oa]s?|cpumini)\b/g;
+
+/**
+ * Key that groups one brand written many ways: "LENOVO", "Lenovo" and "Laptops usadas lenovo" are one key.
+ * A known brand anywhere in the text wins; otherwise the store's extra words are stripped.
+ */
+export function brandKey(b: string): string {
+  const s = b.trim().toLowerCase();
+  const known = Object.keys(KNOWN).find((k) => new RegExp(`\b${k}\b`).test(s));
+  if (known) return known;
+  return s.replace(NOISE, "").replace(/\s+/g, " ").trim() || s;
+}
 
 /** Display name: known brands get their official casing, the rest get a capitalized first letter. */
 export function canonicalBrand(b: string): string {

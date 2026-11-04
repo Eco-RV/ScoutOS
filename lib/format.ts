@@ -27,3 +27,14 @@ export function storeDiscountPct(p: { currentPrice: number; listPrice: number | 
 export function droppedBy(p: { currentPrice: number; prevPrice: number | null }) {
   return p.prevPrice && p.prevPrice > p.currentPrice ? p.prevPrice - p.currentPrice : 0;
 }
+
+/** Host and path only, for display. The full link stays in `href`. */
+export function shortUrl(raw: string) {
+  try {
+    const u = new URL(raw);
+    const path = u.pathname === "/" ? "" : u.pathname.replace(/\/$/, "");
+    return `${u.hostname.replace(/^www\./, "")}${path}${u.search ? "?…" : ""}`;
+  } catch {
+    return raw;
+  }
+}

@@ -84,7 +84,7 @@ export default function AiPrompt({
           <button className="btn disabled:opacity-50" disabled={saving} onClick={save}>
             {saving ? "Guardando…" : "Guardar respuesta"}
           </button>
-          {error && <span className="text-sm text-deal">{error}</span>}
+          {error && <span role="alert" className="text-sm text-error">{error}</span>}
         </div>
       </div>
     </section>

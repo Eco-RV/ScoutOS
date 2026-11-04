@@ -17,3 +17,16 @@ describe("brands", () => {
     expect(canonicalBrand("ACEMAGIC")).toBe("Acemagic");
   });
 });
+
+describe("brand cleanup", () => {
+  it("drops the used-laptop wording the stores add", () => {
+    expect(canonicalBrand("Laptops usadas dell")).toBe("Dell");
+    expect(canonicalBrand("Laptops usadas lenovo")).toBe("Lenovo");
+    expect(brandKey("Laptops usadas hp")).toBe(brandKey("HP"));
+  });
+
+  it("finds a known brand inside a dirty label", () => {
+    expect(canonicalBrand("Cpumini usadas hp")).toBe("HP");
+    expect(canonicalBrand("GIGABYTE")).toBe("Gigabyte");
+  });
+});

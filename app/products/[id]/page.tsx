@@ -2,7 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { droppedBy, formatPrice, formatStorage, storeDiscountPct, timeAgo } from "@/lib/format";
+import { priceDropSince } from "@/lib/history";
 import { storeName } from "@/lib/scrapers";
+import FavoriteButton from "@/components/FavoriteButton";
 import PriceChart from "@/components/PriceChart";
 
 export const dynamic = "force-dynamic";
@@ -11,12 +13,13 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
   const { id } = await params;
   const p = await prisma.product.findUnique({
     where: { id: Number(id) },
-    include: { history: { orderBy: { capturedAt: "asc" } } },
+    include: { history: { orderBy: { capturedAt: "asc" } }, favorite: true },
   });
   if (!p) notFound();
 
   const pct = storeDiscountPct(p);
   const drop = droppedBy(p);
+  const sinceFirst = priceDropSince(p.history, p.currentPrice);
   const specs: [string, string | null | undefined][] = [
     ["Procesador", p.cpu],
     ["RAM", p.ramGb ? `${p.ramGb} GB` : null],
@@ -46,14 +49,21 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
             {pct > 0 && (
               <>
                 <span className="text-muted line-through">{formatPrice(p.listPrice!)}</span>
-                <span className="rounded bg-deal px-1.5 py-0.5 text-sm font-semibold text-white">-{pct}%</span>
+                <span className="rounded bg-deal px-1.5 py-0.5 text-sm font-semibold text-on-deal">-{pct}%</span>
               </>
             )}
-            {!p.inStock && <span className="rounded bg-neutral-700 px-1.5 py-0.5 text-sm text-white">Agotado</span>}
+            {!p.inStock && <span className="rounded bg-foreground px-1.5 py-0.5 text-sm text-background">Agotado</span>}
           </div>
           <div className="text-sm text-muted">
             Precio más bajo visto: <strong className="text-foreground">{formatPrice(p.lowestPrice)}</strong>
             {drop > 0 && <> · bajó {formatPrice(drop)} desde la revisión anterior</>}
+            {sinceFirst && (
+              <div className="mt-2 inline-flex flex-wrap items-center gap-2 rounded-lg bg-deal-bg px-3 py-2 text-deal">
+                <span className="rounded-full bg-deal px-2 py-0.5 font-semibold text-on-deal">−{sinceFirst.pct}%</span>
+                Bajó {formatPrice(sinceFirst.amount)} desde {formatPrice(sinceFirst.first)} que vimos el{" "}
+                {sinceFirst.firstAt.toLocaleDateString("es-CR", { day: "numeric", month: "short" })}
+              </div>
+            )}
             {" "}· revisado {timeAgo(p.updatedAt)}
           </div>
           <dl className="grid grid-cols-2 gap-x-6 gap-y-2 rounded-lg border border-line bg-surface p-4 text-sm sm:grid-cols-3">
@@ -65,6 +75,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
             ))}
           </dl>
           <a href={p.url} target="_blank" rel="noreferrer" className="btn inline-block">Ver en la tienda ↗</a>
+          <FavoriteButton productId={p.id} saved={!!p.favorite} className="ml-2 size-10" />
         </div>
       </div>
 

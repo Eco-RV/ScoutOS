@@ -1,54 +1,295 @@
 @import "tailwindcss";
 
+/* Tokens. Dark only: deep navy surfaces, cyan and violet accents, emerald for good news (drops). */
 :root {
-  --background: #f6f7f9;
-  --foreground: #16181d;
-  --surface: #ffffff;
-  --line: #e3e6eb;
-  --muted: #687080;
-  --accent: #0f7b6c;
-  --deal: #c2410c;
-  --deal-bg: #fff1e8;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0e1013;
-    --foreground: #e8eaee;
-    --surface: #171a1f;
-    --line: #2a2f37;
-    --muted: #9099a8;
-    --accent: #34c3ae;
-    --deal: #fb923c;
-    --deal-bg: #2a1a10;
-  }
+  color-scheme: dark;
+  --background: #080c1a;
+  --foreground: #eef2ff;
+  --surface: #0f1729;
+  --surface-2: #17213e;
+  --line: #243159;
+  --muted: #94a3c8;
+  --accent: #22d3ee;
+  --accent-2: #a78bfa;
+  --sys: #f0abfc;
+  --error: #fb7185;
+  --error-bg: #2c1222;
+  --deal: #34d399;
+  --deal-bg: #0d2a24;
+  --on-accent: #03141a;
+  --on-deal: #03140e;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
   --color-line: var(--line);
   --color-muted: var(--muted);
   --color-accent: var(--accent);
+  --color-accent-2: var(--accent-2);
+  --color-sys: var(--sys);
+  --color-error: var(--error);
+  --color-error-bg: var(--error-bg);
   --color-deal: var(--deal);
   --color-deal-bg: var(--deal-bg);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-on-accent: var(--on-accent);
+  --color-on-deal: var(--on-deal);
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-display-face);
+  --font-mono: var(--font-jetbrains);
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-family: var(--font-inter), system-ui, sans-serif;
 }
 
+code,
+pre,
+.font-mono {
+  font-variant-ligatures: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Headline gradient: the brand's cyan into violet. Static, so it costs nothing to paint. */
+.text-gradient {
+  background: linear-gradient(95deg, var(--accent) 0%, var(--accent-2) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Atmosphere: slow colour orbs (transform only), behind the content. */
+.atmosphere {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.orb {
+  position: absolute;
+  width: 60vmax;
+  height: 60vmax;
+  border-radius: 50%;
+  will-change: transform;
+  animation: drift 26s ease-in-out infinite alternate;
+}
+.orb--1 {
+  top: -20vmax;
+  left: -15vmax;
+  background: radial-gradient(circle, rgba(34, 211, 238, 0.14), transparent 60%);
+}
+.orb--2 {
+  top: 30vh;
+  right: -25vmax;
+  background: radial-gradient(circle, rgba(167, 139, 250, 0.13), transparent 60%);
+  animation-duration: 32s;
+  animation-delay: -8s;
+}
+.orb--3 {
+  bottom: -30vmax;
+  left: 20vw;
+  background: radial-gradient(circle, rgba(52, 211, 153, 0.08), transparent 60%);
+  animation-duration: 38s;
+  animation-delay: -16s;
+}
+@keyframes drift {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to { transform: translate3d(6vw, -4vh, 0) scale(1.08); }
+}
+
+/* Header: transparent at the top, translucent with blur once the page scrolls. */
+.site-header {
+  transition: background-color 0.3s var(--ease-out), border-color 0.3s var(--ease-out), backdrop-filter 0.3s var(--ease-out);
+  border-bottom: 1px solid transparent;
+}
+.site-header--solid {
+  background-color: color-mix(in oklab, var(--background) 80%, transparent);
+  backdrop-filter: blur(14px) saturate(1.3);
+  border-bottom-color: var(--line);
+}
+
+/* Nav links: an underline grows from the left; the current page gets a filled pill. */
+.nav-link {
+  padding: 0.375rem 0.75rem;
+  border-radius: 999px;
+  color: var(--muted);
+  transition: color 0.2s, background-color 0.2s;
+}
+.nav-link:hover {
+  color: var(--foreground);
+  background-color: var(--surface-2);
+}
+.nav-link[aria-current="page"] {
+  color: var(--foreground);
+  background-color: color-mix(in oklab, var(--accent) 16%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent) 45%, transparent);
+}
+
+/* Inputs */
 .input {
-  @apply rounded-md border border-line bg-surface px-3 py-2 text-sm outline-none focus:border-accent;
+  @apply rounded-lg border border-line bg-surface px-3 py-2 text-sm outline-none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 25%, transparent);
+}
+
+/* Buttons lift 2px on hover; the lift is skipped while disabled. */
+.btn,
+.btn-ghost {
+  display: inline-block;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  transition: transform 0.2s var(--ease-out), background-color 0.2s, box-shadow 0.3s var(--ease-out), opacity 0.2s;
 }
 .btn {
-  @apply rounded-md bg-accent px-3 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50;
+  background: linear-gradient(95deg, var(--accent), var(--accent-2));
+  color: var(--on-accent);
+  font-weight: 600;
+  padding: 0.5rem 0.9rem;
+}
+.btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px -12px var(--accent);
 }
 .btn-ghost {
-  @apply rounded-md border border-line px-3 py-1.5 text-sm hover:bg-background disabled:opacity-50;
+  border: 1px solid var(--line);
+  padding: 0.375rem 0.75rem;
+}
+.btn-ghost:hover:not(:disabled) {
+  transform: translateY(-2px);
+  background: var(--surface-2);
+}
+.btn:disabled,
+.btn-ghost:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btn:active:not(:disabled),
+.btn-ghost:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Filter chips: links that toggle a filter. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--muted);
+  background: var(--surface);
+  transition: transform 0.2s var(--ease-out), border-color 0.2s, color 0.2s, background-color 0.2s;
+}
+.chip:hover {
+  transform: translateY(-1px);
+  border-color: var(--accent);
+  color: var(--foreground);
+}
+.chip--on {
+  border-color: transparent;
+  background: linear-gradient(95deg, var(--accent), var(--accent-2));
+  color: var(--on-accent);
+  font-weight: 600;
+}
+
+/* Filter dropdowns (<details>): the panel fades and rises when it opens. */
+.dropdown-panel {
+  animation: panel-in 0.22s var(--ease-out) both;
+}
+@keyframes panel-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Entrance: pages, cards and stat tiles. --i staggers them. */
+.rise {
+  animation: rise 0.6s var(--ease-out) backwards;
+  animation-delay: calc(var(--i, 0) * 60ms);
+}
+@keyframes rise {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: none; }
+}
+.spring {
+  animation: spring 0.6s var(--ease-spring) backwards;
+  animation-delay: calc(var(--i, 0) * 90ms + 120ms);
+}
+@keyframes spring {
+  from { opacity: 0; transform: scale(0.85); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Compare bar slides up from the bottom edge. */
+.bar-enter {
+  animation: bar-enter 0.45s var(--ease-out) backwards;
+}
+@keyframes bar-enter {
+  from { transform: translateY(100%); }
+  to { transform: none; }
+}
+
+/* Mobile menu panel: fades down. */
+.menu-enter {
+  animation: panel-in 0.25s var(--ease-out) both;
+}
+
+/* Loading skeletons: the shimmer sweeps with transform. */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  border-radius: 0.75rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, 0.06) 50%, transparent 70%);
+  transform: translateX(-100%);
+  animation: shimmer 1.4s infinite;
+}
+@keyframes shimmer {
+  to { transform: translateX(100%); }
+}
+
+/* Reduced motion: keep end states, drop the movement. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .orb,
+  .skeleton::after {
+    animation: none !important;
+  }
+}
+
+/* Search box with a leading icon. Its own class, because .input sets padding and would win over a pl-* utility. */
+.input--icon {
+  padding-left: 2.25rem;
 }

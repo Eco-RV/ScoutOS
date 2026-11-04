@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { timeAgo } from "@/lib/format";
+import PageHeader from "@/components/PageHeader";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +23,9 @@ export default async function ComparisonsPage() {
 
   return (
     <div className="space-y-5">
-      <h1 className="text-2xl font-semibold tracking-tight">Comparaciones</h1>
+      <PageHeader eyebrow="Análisis" title="Comparaciones">
+        Laptops guardadas lado a lado. Cada comparación puede llevar un análisis de IA.
+      </PageHeader>
       <ul className="divide-y divide-line rounded-lg border border-line bg-surface">
         {comparisons.map((c) => (
           <li key={c.id}>
