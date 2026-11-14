@@ -10,9 +10,9 @@ describe("textWhere", () => {
   it("requires every word to match one of the text fields", () => {
     expect(textWhere("dell  16gb rtx")).toEqual({
       AND: [
-        { OR: [{ title: { contains: "dell" } }, { brand: { contains: "dell" } }, { cpu: { contains: "dell" } }, { gpu: { contains: "dell" } }] },
-        { OR: [{ title: { contains: "16gb" } }, { brand: { contains: "16gb" } }, { cpu: { contains: "16gb" } }, { gpu: { contains: "16gb" } }] },
-        { OR: [{ title: { contains: "rtx" } }, { brand: { contains: "rtx" } }, { cpu: { contains: "rtx" } }, { gpu: { contains: "rtx" } }] },
+        { OR: [{ title: { contains: "dell", mode: "insensitive" } }, { brand: { contains: "dell", mode: "insensitive" } }, { cpu: { contains: "dell", mode: "insensitive" } }, { gpu: { contains: "dell", mode: "insensitive" } }] },
+        { OR: [{ title: { contains: "16gb", mode: "insensitive" } }, { brand: { contains: "16gb", mode: "insensitive" } }, { cpu: { contains: "16gb", mode: "insensitive" } }, { gpu: { contains: "16gb", mode: "insensitive" } }] },
+        { OR: [{ title: { contains: "rtx", mode: "insensitive" } }, { brand: { contains: "rtx", mode: "insensitive" } }, { cpu: { contains: "rtx", mode: "insensitive" } }, { gpu: { contains: "rtx", mode: "insensitive" } }] },
       ],
     });
   });

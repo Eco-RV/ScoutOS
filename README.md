@@ -11,6 +11,7 @@ Rastreador de precios de laptops en tiendas de Costa Rica. Pegas el link de una 
 | zentechcr.net, extremeoutletcr.com | WooCommerce | Store API pública |
 | cfx-cr.com | Magento | HTML (cheerio) |
 | extremetechcr.com | WooCommerce | Protegida por Cloudflare (403 a peticiones automáticas): se importa con el marcador de `/import` |
+| compufaxcr.com | Alegra Shop | Carga los productos con JavaScript: se importa con el marcador de `/import` desde una categoría |
 
 Links válidos, por ejemplo:
 
@@ -24,9 +25,9 @@ Links válidos, por ejemplo:
 ## Uso
 
 ```bash
-cp .env.example .env
+cp .env.example .env   # edita DATABASE_URL (PostgreSQL, base "scoutos" ya creada)
 npm install
-npx prisma migrate dev   # crea prisma/dev.db
+npx prisma migrate deploy   # crea las tablas en PostgreSQL
 npm run dev              # http://localhost:3000
 ```
 
