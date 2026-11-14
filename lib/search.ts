@@ -9,7 +9,7 @@ export function textWhere(q: string | undefined): Prisma.ProductWhereInput | und
   if (tokens.length === 0) return undefined;
   return {
     AND: tokens.map((t) => ({
-      OR: [{ title: { contains: t } }, { brand: { contains: t } }, { cpu: { contains: t } }, { gpu: { contains: t } }],
+      OR: [{ title: { contains: t, mode: "insensitive" } }, { brand: { contains: t, mode: "insensitive" } }, { cpu: { contains: t, mode: "insensitive" } }, { gpu: { contains: t, mode: "insensitive" } }],
     })),
   };
 }

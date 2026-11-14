@@ -25,9 +25,9 @@ Links válidos, por ejemplo:
 ## Uso
 
 ```bash
-cp .env.example .env
+cp .env.example .env   # edita DATABASE_URL (PostgreSQL, base "scoutos" ya creada)
 npm install
-npx prisma migrate dev   # crea prisma/dev.db
+npx prisma migrate deploy   # crea las tablas en PostgreSQL
 npm run dev              # http://localhost:3000
 ```
 
